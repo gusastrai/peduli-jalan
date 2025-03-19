@@ -13,7 +13,9 @@ import {
   ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
+import { BASE_URL } from "../../config";
 
 const { height } = Dimensions.get("window");
 const CAMERA_HEIGHT = (height * 3) / 4;
@@ -80,15 +82,27 @@ export default function Upload() {
       return;
     }
 
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission to access location was denied");
+      return;
+    }
+
+    const location = await Location.getCurrentPositionAsync({});
+    const latitude = location.coords.latitude;
+    const longitude = location.coords.longitude;
+
     const formData = new FormData();
     formData.append("image", {
       uri: imageUri,
       type: "image/jpeg",
       name: "photo.jpeg",
     });
+    formData.append("latitude", latitude);
+    formData.append("longitude", longitude);
 
     try {
-      const response = await fetch("http://192.168.1.33:5001/predict", {
+      const response = await fetch(`${BASE_URL}/predict`, {
         method: "POST",
         headers: {
           "Content-Type": "multipart/form-data",
@@ -237,7 +251,7 @@ const styles = StyleSheet.create({
   },
   imagePreview: {
     width: "100%",
-    height: 250,
+    height: 400,
     marginVertical: 10,
     borderRadius: 10,
   },
@@ -318,15 +332,15 @@ const styles = StyleSheet.create({
     width: 50,
   },
   submitButton: {
-    backgroundColor: '#146bfa',
+    backgroundColor: "#146bfa",
     padding: 10,
     borderRadius: 8,
     marginVertical: 15,
-    alignItems: 'center',
+    alignItems: "center",
   },
   submitButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

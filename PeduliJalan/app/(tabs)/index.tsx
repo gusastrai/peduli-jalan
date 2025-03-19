@@ -1,84 +1,78 @@
-import React from "react";
-import { Text, View, Image, StyleSheet, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Text, View, Image, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { BASE_URL } from "../../config";
 
 export default function Index() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    setLoading(true); // Set loading to true when fetching posts initially
+    try {
+      const response = await fetch(`${BASE_URL}/posts`);
+      const data = await response.json();
+      setPosts(data);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to handle pull-to-refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
+  };
+
+  if (loading && !refreshing) {
+    return <ActivityIndicator size="large" color="#0000ff" style={styles.loadingIndicator} />;
+  }
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.card}>
-        <View style={styles.userInfo}>
-          <Image
-            source={require("../../assets/images/profil/profil1.jpg")}
-            style={styles.avatar}
-          />
-          <View>
-            <Text style={styles.userName}>Irfan Dwi Samudra</Text>
-            <View style={styles.userDetailsContainer}>
-              <Ionicons name="time-outline" size={14} color="#777" />
-              <Text style={styles.userDetails}> 3 hari · </Text>
-              <Ionicons name="location-outline" size={14} color="#146bfa" />
-              <Text style={styles.location}> Kamal, Bangkalan</Text>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      {posts.map((post, index) => (
+        <View key={index} style={styles.card}>
+          <View style={styles.userInfo}>
+            <Image
+              source={
+                post.profile_image
+                  ? { uri: `data:image/jpeg;base64,${post.profile_image}` }
+                  : require("../../assets/images/profil/profil1.jpg") 
+              }
+              style={styles.avatar}
+            />
+            <View>
+              <Text style={styles.userName}>{post.user_name}</Text>
+              <View style={styles.userDetailsContainer}>
+                <Ionicons name="time-outline" size={14} color="#777" />
+                <Text style={styles.userDetails}> {post.time_ago} · </Text>
+                <Ionicons name="location-outline" size={14} color="#146bfa" />
+                <Text style={styles.location}> {post.location}</Text>
+              </View>
+            </View>
+            <View style={styles.moreOptions}>
+              <Text>•••</Text>
             </View>
           </View>
-          <View style={styles.moreOptions}>
-            <Text>•••</Text>
-          </View>
-        </View>
-        <Image
-          source={require("../../assets/images/jalan/jalan1.jpg")}
-          style={styles.postImage}
-        />
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.userInfo}>
           <Image
-            source={require("../../assets/images/profil/profil2.jpg")}
-            style={styles.avatar}
+            source={{ uri: `data:image/jpeg;base64,${post.post_image}` }}
+            style={styles.postImage}
           />
-          <View>
-            <Text style={styles.userName}>Bagus Satria</Text>
-            <View style={styles.userDetailsContainer}>
-              <Ionicons name="time-outline" size={14} color="#777" />
-              <Text style={styles.userDetails}> 1 hari · </Text>
-              <Ionicons name="location-outline" size={14} color="#146bfa" />
-              <Text style={styles.location}> Benjeng, Gresik</Text>
-            </View>
-          </View>
-          <View style={styles.moreOptions}>
-            <Text>•••</Text>
-          </View>
         </View>
-        <Image
-          source={require("../../assets/images/jalan/jalan2.jpg")}
-          style={styles.postImage}
-        />
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.userInfo}>
-          <Image
-            source={require("../../assets/images/profil/profil3.jpg")}
-            style={styles.avatar}
-          />
-          <View>
-            <Text style={styles.userName}>Sabil Ahmad Hidayat</Text>
-            <View style={styles.userDetailsContainer}>
-              <Ionicons name="time-outline" size={14} color="#777" />
-              <Text style={styles.userDetails}> 2 hari · </Text>
-              <Ionicons name="location-outline" size={14} color="#146bfa" />
-              <Text style={styles.location}> Kamal, Bangkalan</Text>
-            </View>
-          </View>
-          <View style={styles.moreOptions}>
-            <Text>•••</Text>
-          </View>
-        </View>
-        <Image
-          source={require("../../assets/images/jalan/jalan3.jpg")}
-          style={styles.postImage}
-        />
-      </View>
+      ))}
     </ScrollView>
   );
 }
@@ -88,11 +82,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
-  heading: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginTop: 12,
-    marginLeft: 20,
+  loadingIndicator: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   card: {
     marginTop: 20,
@@ -134,6 +127,6 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: "100%",
-    height: 350,
+    height: 500,
   },
 });
